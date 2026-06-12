@@ -446,3 +446,125 @@ A skill deve atingir os seguintes mínimos em **todos os 3 projetos**:
 - **Projetos diferentes exigem adaptação** — a Fase 3 de um projeto já parcialmente organizado não vai ter as mesmas transformações de um monolito. Sua skill deve se adaptar ao contexto.
 - **Pedir confirmação na Fase 2 é obrigatório** — o humano deve revisar o relatório antes de qualquer modificação.
 - **Consulte as referências do curso** — revise a documentação oficial da ferramenta escolhida e os materiais das aulas para relembrar a estrutura e anatomia de uma skill.
+
+---
+
+## Entrega Executada
+
+Ferramenta escolhida: **OpenAI Codex**. A skill foi entregue no caminho `.claude/skills/refactor-arch/` dentro dos três projetos, conforme a estrutura solicitada no enunciado.
+
+### Análise Manual
+
+#### Projeto 1 — `code-smells-project`
+
+- **CRITICAL:** `app.py:59-78` executava SQL arbitrário recebido via `/admin/query`.
+- **CRITICAL:** `models.py:28`, `models.py:47-49`, `models.py:109-110` e `models.py:289-299` montavam SQL por concatenação.
+- **CRITICAL:** `app.py:7-8` mantinha `SECRET_KEY` hardcoded e debug habilitado.
+- **HIGH:** `models.py:1-314` concentrava produtos, usuários, pedidos, busca, relatórios e persistência.
+- **MEDIUM:** `models.py:171-233` fazia consultas N+1 para montar pedidos e itens.
+- **LOW:** `controllers.py:52`, `controllers.py:242` e `models.py:256-262` espalhavam listas/status/limiares como magic values.
+
+#### Projeto 2 — `ecommerce-api-legacy`
+
+- **CRITICAL:** `src/utils.js:1-6` continha credenciais e chave de gateway hardcoded.
+- **CRITICAL:** `src/utils.js:17-22` implementava hashing fraco por base64 truncado.
+- **CRITICAL:** `src/AppManager.js:43-46` logava cartão e chave de pagamento.
+- **HIGH:** `src/AppManager.js:4-138` era uma God Class com banco, rotas, checkout, relatórios e delete.
+- **MEDIUM:** `src/AppManager.js:89-127` fazia cascata de callbacks e consultas N+1 no relatório financeiro.
+- **LOW:** `src/AppManager.js:29-33` usava nomes de payload pouco claros (`usr`, `eml`, `pwd`, `c_id`).
+
+#### Projeto 3 — `task-manager-api`
+
+- **CRITICAL:** `app.py:11-13` e `services/notification_service.py:7-10` tinham segredos hardcoded.
+- **CRITICAL:** `models/user.py:27-32` usava MD5 para senhas.
+- **CRITICAL:** `models/user.py:16-25` expunha `password` no serializer.
+- **HIGH:** `routes/task_routes.py:85-223` e `routes/user_routes.py:42-132` misturavam HTTP, validação, regras e persistência.
+- **MEDIUM:** múltiplos `Query.get()` em `routes/` usavam API legada do SQLAlchemy 2.x.
+- **LOW:** imports não usados em `app.py`, `routes/task_routes.py`, `routes/user_routes.py` e `utils/helpers.py` indicavam código morto.
+
+### Construção da Skill
+
+A skill `refactor-arch` foi criada em `code-smells-project/.claude/skills/refactor-arch/` e copiada para os outros dois projetos. O `SKILL.md` define três fases obrigatórias: análise, auditoria com pausa de confirmação e refatoração MVC.
+
+Arquivos de referência criados:
+
+- `references/project-analysis.md`: heurísticas para detectar stack, domínio, arquitetura e riscos.
+- `references/anti-pattern-catalog.md`: 12 anti-patterns com severidades, incluindo APIs deprecated.
+- `references/report-template.md`: formato padronizado dos relatórios de Fase 2.
+- `references/mvc-guidelines.md`: responsabilidades de `config/`, `models/`, `views/routes`, `controllers`, `services` e `middlewares`.
+- `references/refactoring-playbook.md`: 10 transformações antes/depois, incluindo SQL parametrizado, config extraída, hashing seguro e substituição de APIs legadas.
+
+Agnosticismo de tecnologia: a skill usa sinais estruturais (`requirements.txt`, `package.json`, rotas Flask/Express, SQL/ORM, entry points) e não depende de nomes específicos dos projetos.
+
+### Resultados
+
+Relatórios gerados:
+
+- `reports/audit-project-1.md`: CRITICAL 4, HIGH 3, MEDIUM 3, LOW 2.
+- `reports/audit-project-2.md`: CRITICAL 3, HIGH 4, MEDIUM 3, LOW 2.
+- `reports/audit-project-3.md`: CRITICAL 3, HIGH 3, MEDIUM 4, LOW 2.
+
+Estruturas antes/depois:
+
+- `code-smells-project`: de `app.py` + `controllers.py` + `models.py` para `config/`, `controllers/`, `models/`, `services/`, `views/` e `middlewares/`.
+- `ecommerce-api-legacy`: de `AppManager.js` monolítico para `config/`, `database/`, `models/`, `services/`, `controllers/`, `views/` e `middlewares/`.
+- `task-manager-api`: manteve `routes/` como camada HTTP fina e moveu regras para `controllers/` e `services/`.
+
+Validação executada:
+
+| Projeto | Boot | Endpoints validados | Resultado |
+|---|---|---|---|
+| `code-smells-project` | `PORT=5101 python app.py` | `/health`, `/produtos`, `/produtos/busca`, `/login`, `/pedidos`, `/relatorios/vendas`, `/admin/query` | OK; SQL arbitrário retorna 403 |
+| `ecommerce-api-legacy` | `PORT=3102 node src/app.js` | `/api/checkout`, `/api/admin/financial-report`, `DELETE /api/users/1` | OK; cartão é mascarado em log |
+| `task-manager-api` | `PORT=5103 python app.py` | `/health`, `/tasks`, `/tasks/search`, `/tasks/stats`, `/users`, `/login`, `/reports/summary`, `/categories` | OK; login não expõe senha |
+
+Checklist geral:
+
+- [x] Linguagem, framework, domínio e arquivos analisados identificados nos três projetos.
+- [x] Cada relatório segue o template, tem linhas exatas e pelo menos 5 findings.
+- [x] Findings ordenados por severidade e com detecção de API deprecated quando aplicável.
+- [x] Skill validada com `quick_validate.py` nas três cópias.
+- [x] Estrutura MVC criada nos três projetos.
+- [x] Configuração sensível extraída para variáveis de ambiente.
+- [x] Error handling centralizado.
+- [x] Aplicações iniciam sem erro e endpoints originais respondem.
+
+### Como Executar
+
+Pré-requisitos:
+
+- Python 3 com `pip`.
+- Node.js e npm para o projeto Express.
+- Claude Code, Codex ou ferramenta compatível com skills. A pasta da skill está em `.claude/skills/refactor-arch/`.
+
+Executar a skill com Claude Code:
+
+```bash
+cd code-smells-project
+claude "/refactor-arch"
+
+cd ../ecommerce-api-legacy
+claude "/refactor-arch"
+
+cd ../task-manager-api
+claude "/refactor-arch"
+```
+
+Rodar os projetos refatorados:
+
+```bash
+cd code-smells-project
+pip install -r requirements.txt
+python app.py
+
+cd ../ecommerce-api-legacy
+npm install
+npm start
+
+cd ../task-manager-api
+pip install -r requirements.txt
+python seed.py
+python app.py
+```
+
+Observações: neste ambiente local o comando `claude` não estava instalado; a execução foi conduzida pelo Codex seguindo a skill criada. O sandbox exigiu permissão de rede para instalar dependências e permissão elevada para abrir portas locais durante os smoke tests.
