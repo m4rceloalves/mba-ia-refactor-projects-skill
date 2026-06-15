@@ -1,4 +1,5 @@
 from datetime import datetime
+from utils.time_utils import utc_now
 import re
 import os
 import json
@@ -35,7 +36,7 @@ def generate_id():
 
 def log_action(action, details=None):
 
-    timestamp = datetime.utcnow()
+    timestamp = utc_now()
     print(f"[{timestamp}] ACTION: {action}")
     if details:
         print(f"  DETAILS: {details}")
