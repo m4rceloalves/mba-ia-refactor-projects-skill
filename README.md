@@ -9,7 +9,9 @@
 - **CRITICAL — Segredo hardcoded:** `app.py:7-8` expunha `SECRET_KEY` e debug no código.
 - **HIGH — God module:** `models.py:1-314` misturava produtos, usuários, pedidos, busca, relatórios e persistência.
 - **MEDIUM — N+1 queries:** `models.py:171-233` fazia consultas em loops para montar pedidos.
+- **MEDIUM — Validação duplicada:** `controllers.py:24-96` repetia validações de produto em criação e atualização, aumentando risco de regras divergentes.
 - **LOW — Magic values:** categorias, status e regras de desconto estavam espalhados em `controllers.py` e `models.py`.
+- **LOW — Import não usado:** `models.py:2` importava `sqlite3` sem uso, sinalizando código morto e reduzindo legibilidade.
 
 ### Projeto 2 — `ecommerce-api-legacy`
 
@@ -18,7 +20,9 @@
 - **CRITICAL — Dados sensíveis em log:** `src/AppManager.js:43-46` registrava cartão e chave de pagamento.
 - **HIGH — God Class:** `src/AppManager.js:4-138` concentrava banco, rotas, checkout, relatório e exclusão.
 - **MEDIUM — N+1/callback cascade:** `src/AppManager.js:89-127` fazia consultas aninhadas para relatório financeiro.
+- **MEDIUM — Error handling descentralizado:** `src/AppManager.js:37-77` e `src/AppManager.js:83-128` tratavam erros inline e ignoravam falhas em alguns callbacks.
 - **LOW — Nomes ruins:** `usr`, `eml`, `pwd`, `c_id` e `cc` reduziam clareza do contrato.
+- **LOW — Export morto:** `src/utils.js:10` e `src/utils.js:25` exportavam `totalRevenue` sem uso real.
 
 ### Projeto 3 — `task-manager-api`
 
@@ -27,7 +31,9 @@
 - **CRITICAL — Senha no serializer:** `models/user.py:16-25` retornava `password` em respostas.
 - **HIGH — Regras em rotas:** `routes/task_routes.py` e `routes/user_routes.py` misturavam HTTP, validação, regra e persistência.
 - **MEDIUM — API deprecated:** múltiplos `Query.get()` usavam API legada do SQLAlchemy 2.x.
+- **MEDIUM — N+1 queries:** `routes/task_routes.py:14-59` e `routes/report_routes.py:53-68` faziam consultas extras por item/usuário.
 - **LOW — Imports mortos:** imports não usados indicavam código obsoleto em `app.py`, rotas e helpers.
+- **LOW — Magic values duplicados:** `routes/task_routes.py:110-113`, `routes/user_routes.py:64` e `utils/helpers.py:110-116` repetiam status, roles e limites.
 
 ## Construção da Skill
 
